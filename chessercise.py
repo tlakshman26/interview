@@ -15,6 +15,7 @@ def main(argv):
     target = False
     len_r_keys = 8
     opposing_pieces = []
+    collect = False
 
     for i, value in enumerate(range(1,9)[::-1]):
         for j, char in enumerate(range(97, 105)):
@@ -90,7 +91,8 @@ def main(argv):
     def knightmoves(x,y):
         possible_list = [(x+1, y+2), (x+2, y+1), (x-1, y-2), (x-2, y-1),
                          (x+1, y-2), (x+2, y-1), (x-1, y+2), (x-2, y+1)]
-        return [i for i in possible_list if i in tiles and 'm' not in tiles.get(i)]
+        result = [i for i in possible_list if i in tiles]
+        return [i for i in result if not ('m' in tiles.get(i) or 's' in tiles.get(i))]
 
     def get_moves(piece, position_index):
         x, y = position_index
@@ -110,16 +112,22 @@ def main(argv):
             return moves
         else:
             moves_list = get_moves(piece, start)
-            if piece == 'knight' and start in moves_list:
-                moves_list.remove(start)
             start = get_most_nearest_tile(target, moves_list)
+            if piece == 'knight':
+                for i in moves_list:
+                    if target in get_moves(piece, i):
+                        start = i
             moves.append(start)
             tiles[start] = ' m'
             moves.extend(get_target_moves(piece, start, target))
             return moves
 
+    def clear_moves(moves):
+        for i in moves:
+            tiles[i] = '  '
+
     try:
-        opts, args = getopt.getopt(argv, "hp:n:",["target", "piece=","position="])
+        opts, args = getopt.getopt(argv, "hp:n:",["target","collect", "piece=","position="])
     except getopt.GetoptError as e:
         print 'chessercise.py -piece <KNIGHT> -position <d2>'
         sys.exit(2)
@@ -146,6 +154,8 @@ def main(argv):
                 sys.exit(3)
         elif opt in ("--target"):
             target = True
+        elif opt in ("--collect"):
+            collect = True
 
     if not (piece and  position):
         print 'chessercise.py -piece <KNIGHT> -position <d2>'
@@ -162,6 +172,12 @@ def main(argv):
         result = get_target_moves(piece,position_index, target)
         print "After all possible moves.\n"
         printBoard()
+        clear_moves(result)
+        if collect:
+            for i in opposing_pieces:
+                r = get_target_moves(piece, position_index, i)
+                print [gameboard.get(i) for i in r if i in gameboard]
+                clear_moves(r)
     else:
         result = get_moves(piece, position_index)
 
